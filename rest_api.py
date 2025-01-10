@@ -4,18 +4,15 @@ import oracledb
 from datetime import date, datetime
 from decimal import Decimal
 
-# Oracle Database Configuration
 DB_CONFIG = {
     "user": "system",         # Oracle database username
     "password": "root",     # Oracle database password
-    "dsn": "localhost:1521/XE"  # Replace with your Oracle DSN
+    "dsn": "localhost:1521/XE"  
 }
 
-# Function to get a database connection
 def get_db_connection():
     return oracledb.connect(**DB_CONFIG)
 
-# Custom JSON Encoder for handling special data types
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (date, datetime)):
@@ -27,7 +24,6 @@ class CustomJSONEncoder(json.JSONEncoder):
 # HTTP Request Handler
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        # Existing GET method code
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -93,16 +89,10 @@ class RequestHandler(BaseHTTPRequestHandler):
         conn = None
         cursor = None
         try:
-        # Validate the endpoint
             if self.path.startswith("/medicines/"):
-            # Extract the MedicineID from the URL
                 medicine_id = self.path.split("/")[-1]
-
-            # Establish database connection
                 conn = get_db_connection()
                 cursor = conn.cursor()
-
-            # Check if the medicine exists before deleting
                 query_check = (f"SELECT COUNT(*) FROM Medicines WHERE MedicineID ={medicine_id}")
                 cursor.execute(query_check)
                 count = cursor.fetchone()[0]
@@ -110,13 +100,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if count == 0:
                     self.send_error(404, "Medicine not found")
                     return
-
-            # Delete the medicine
                 query_delete = (f"DELETE FROM Medicines WHERE MedicineID = {medicine_id}")
                 cursor.execute(query_delete)
                 conn.commit()
-
-            # Send success response
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
@@ -127,7 +113,6 @@ class RequestHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, str(e))
         finally:
-        # Safely close cursor and connection if they were initialized
             if cursor:
                 cursor.close()
             if conn:
@@ -137,26 +122,16 @@ class RequestHandler(BaseHTTPRequestHandler):
         conn = None
         cursor = None
         try:
-        # Validate the endpoint
             if self.path.startswith("/medicines/"):
-            # Extract the MedicineID from the URL
                 medicine_id = self.path.split("/")[-1]
-
-            # Read and parse the request body
                 content_length = int(self.headers['Content-Length'])
                 put_data = self.rfile.read(content_length)
                 data = json.loads(put_data)
-
-            # Extract data from the JSON payload
                 medicine_name = data.get("MedicineName")
                 category = data.get("Category")
                 unit_price = data.get("UnitPrice")
-
-            # Establish database connection
                 conn = get_db_connection()
                 cursor = conn.cursor()
-
-            # Check if the medicine exists
                 query_check = "SELECT COUNT(*) FROM Medicines WHERE MedicineID = :1"
                 cursor.execute(query_check, [medicine_id])
                 count = cursor.fetchone()[0]
@@ -164,8 +139,6 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if count == 0:
                     self.send_error(404, "Medicine not found")
                     return
-
-            # Construct the update query dynamically based on the fields provided
                 updates = []
                 params = []
 
@@ -181,12 +154,8 @@ class RequestHandler(BaseHTTPRequestHandler):
 
                 params.append(medicine_id)
                 query_update = f"UPDATE Medicines SET {', '.join(updates)} WHERE MedicineID = :4"
-
-            # Execute the update query
                 cursor.execute(query_update, params)
                 conn.commit()
-
-            # Send success response
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
@@ -197,7 +166,6 @@ class RequestHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, str(e))
         finally:
-        # Safely close cursor and connection if they were initialized
             if cursor:
                 cursor.close()
             if conn:
